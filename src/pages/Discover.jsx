@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Search, SlidersHorizontal, Sparkles, Upload, FileText, CheckCircle } from 'lucide-react'
-import { useStore } from '../lib/store'
+import { useStore, inr } from '../lib/store'
 import { ProductCard, ArtisanCard, Empty } from '../components/ui'
 import { Link } from 'react-router-dom'
 
@@ -9,6 +9,9 @@ const CATS = ['All', 'Pottery', 'Textiles', 'Woodwork', 'Jewellery', 'Metalwork'
 export default function Discover() {
   const { db } = useStore()
   const [q, setQ] = useState(''); const [cat, setCat] = useState('All'); const [max, setMax] = useState(20000); const [sort, setSort] = useState('new')
+  const [focus, setFocus] = useState(false)
+  const resultsRef = useRef(null)
+  useEffect(() => { if (q) { const t = setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150); return () => clearTimeout(t) } }, [q])
   const list = useMemo(() => {
     let l = db.products.filter((p) => {
       const a = db.artisans.find((x) => x.id === p.artisanId)
@@ -27,7 +30,18 @@ export default function Discover() {
         <p className="mt-2 text-terra-100 max-w-lg">Discover authentic crafts from Varanasi to Kutch, directly from the makers — or request a custom piece made just for you.</p>
         <div className="mt-5 flex flex-col sm:flex-row gap-3 max-w-2xl">
           <div className="relative flex-1"><Search className="absolute left-3 top-3 text-stone-400" size={18}/>
-            <input className="input pl-10 text-stone-800" placeholder="Search saree, madhubani, dokra, blue pottery…" value={q} onChange={(e) => setQ(e.target.value)}/></div>
+            <input className="input pl-10 text-stone-800" placeholder="Search saree, madhubani, dokra, blue pottery…" value={q} onChange={(e) => setQ(e.target.value)} onFocus={() => setFocus(true)} onBlur={() => setTimeout(() => setFocus(false), 150)}/>
+            {q && focus && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-stone-200 z-40 overflow-hidden text-stone-800">
+                {list.length === 0 && <div className="p-3 text-sm text-stone-500">No products match "{q}"</div>}
+                {list.slice(0, 5).map((p) => { const a = db.artisans.find((x) => x.id === p.artisanId); return (
+                  <Link key={p.id} to={`/product/${p.id}`} className="flex items-center gap-3 p-2 hover:bg-terra-50">
+                    <img src={p.image} className="w-10 h-10 rounded object-cover bg-stone-100" alt=""/>
+                    <div className="flex-1 min-w-0"><div className="text-sm font-medium truncate">{p.name}</div><div className="text-xs text-stone-500 truncate">{a?.name} · {a?.location?.split(',').slice(-1)[0]}</div></div>
+                    <div className="text-sm font-semibold">{inr(p.price)}</div></Link>) })}
+                {list.length > 5 && <button onMouseDown={() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' })} className="w-full p-2 text-sm text-terra-700 bg-stone-50 hover:bg-terra-50">See all {list.length} results ↓</button>}
+              </div>)}
+          </div>
           <Link to="/custom" className="btn bg-white text-terra-700 hover:bg-terra-50 justify-center whitespace-nowrap"><Sparkles size={16}/>Design your own</Link>
         </div>
       </section>
@@ -48,7 +62,7 @@ export default function Discover() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{db.artisans.slice(0, 8).map((a) => <ArtisanCard key={a.id} a={a}/>)}</div>
       </section>}
 
-      <section>
+      <section ref={resultsRef} className="scroll-mt-20">
         {q && <div className="flex items-center gap-3 mb-3"><h2 className="font-serif text-xl font-semibold">{list.length} result{list.length !== 1 && 's'} for “{q}”</h2><button onClick={() => setQ('')} className="btn-ghost text-sm">Clear</button></div>}
         <div className="flex flex-wrap items-center gap-2 mb-4">
           {CATS.map((c) => <button key={c} onClick={() => setCat(c)} className={`px-3 py-1.5 rounded-full text-sm border ${cat === c ? 'bg-terra-600 text-white border-terra-600' : 'bg-white border-stone-300 hover:border-terra-400'}`}>{c}</button>)}
