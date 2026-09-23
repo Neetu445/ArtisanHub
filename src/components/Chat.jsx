@@ -7,7 +7,7 @@ export default function Chat({ orderId }) {
   const [text, setText] = useState('')
   const end = useRef()
   const msgs = db.messages.filter((m) => m.orderId === orderId)
-  useEffect(() => end.current?.scrollIntoView({ behavior: 'smooth' }), [msgs.length])
+  useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs.length])
   const send = (e) => { e.preventDefault(); if (!text.trim()) return; sendMessage(orderId, text.trim()); setText('') }
   return (
     <div className="card flex flex-col h-80">
