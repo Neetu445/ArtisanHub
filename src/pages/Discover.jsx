@@ -12,8 +12,9 @@ export default function Discover() {
   const list = useMemo(() => {
     let l = db.products.filter((p) => {
       const a = db.artisans.find((x) => x.id === p.artisanId)
-      const hay = `${p.name} ${p.material} ${p.tags?.join(' ')} ${a?.name} ${a?.location} ${a?.craft}`.toLowerCase()
-      return (cat === 'All' || p.category === cat) && p.price <= max && (!q || hay.includes(q.toLowerCase()))
+      const hay = `${p.name} ${p.category} ${p.material} ${(p.tags || []).join(' ')} ${p.description || ''} ${a?.name} ${a?.location} ${a?.craft}`.toLowerCase()
+      const words = q.toLowerCase().split(/\s+/).filter(Boolean)
+      return (cat === 'All' || p.category === cat) && (q ? true : p.price <= max) && words.every((w) => hay.includes(w))
     })
     if (sort === 'low') l = [...l].sort((a, b) => a.price - b.price)
     if (sort === 'high') l = [...l].sort((a, b) => b.price - a.price)
@@ -31,7 +32,7 @@ export default function Discover() {
         </div>
       </section>
 
-      <section className="card p-6 md:flex items-center gap-8">
+      {!q && <section className="card p-6 md:flex items-center gap-8">
         <div className="md:w-1/3"><div className="text-terra-700 text-sm font-medium flex items-center gap-1"><Sparkles size={14}/>Custom orders</div>
           <h2 className="font-serif text-2xl font-bold mt-1">Can't find it? Have it made.</h2>
           <p className="text-stone-600 text-sm mt-2">Send a reference photo or sketch, describe size, colour and material — the artisan quotes a price and timeline, and you approve before work begins.</p>
@@ -40,14 +41,15 @@ export default function Discover() {
           {[[Upload, '1. Share your idea', 'Upload a reference image and describe your design'], [FileText, '2. Get a quote', 'Artisan replies with price, timeline and notes'], [CheckCircle, '3. Approve & track', 'Chat with the maker and follow progress to delivery']].map(([I, t, d]) => (
             <div key={t} className="rounded-xl bg-terra-50 p-4"><I className="text-terra-600" size={22}/><div className="font-medium text-sm mt-2">{t}</div><div className="text-xs text-stone-600 mt-1">{d}</div></div>))}
         </div>
-      </section>
+      </section>}
 
-      <section>
+      {!q && <section>
         <div className="flex items-center justify-between mb-3"><h2 className="font-serif text-xl font-semibold">Meet the Artisans</h2><Link to="/artisans" className="text-sm text-terra-700">View all →</Link></div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{db.artisans.slice(0, 8).map((a) => <ArtisanCard key={a.id} a={a}/>)}</div>
-      </section>
+      </section>}
 
       <section>
+        {q && <div className="flex items-center gap-3 mb-3"><h2 className="font-serif text-xl font-semibold">{list.length} result{list.length !== 1 && 's'} for “{q}”</h2><button onClick={() => setQ('')} className="btn-ghost text-sm">Clear</button></div>}
         <div className="flex flex-wrap items-center gap-2 mb-4">
           {CATS.map((c) => <button key={c} onClick={() => setCat(c)} className={`px-3 py-1.5 rounded-full text-sm border ${cat === c ? 'bg-terra-600 text-white border-terra-600' : 'bg-white border-stone-300 hover:border-terra-400'}`}>{c}</button>)}
           <div className="ml-auto flex items-center gap-3 text-sm">
